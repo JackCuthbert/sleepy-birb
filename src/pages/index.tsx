@@ -1,150 +1,258 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import axios from 'axios'
 import useSWR from 'swr'
-import Head from 'next/head'
 import { Twemoji } from 'react-emoji-render'
-import { TweetInfo } from './api/tweet'
+import { useRouter } from 'next/router'
+import { TweetResponse } from './api/tweet'
+import { Head, ExpandMedia } from '../components'
+import { parseTweet, TweetPayload } from '../utils/tweet'
+import { GetServerSideProps } from 'next'
 
-// interface TweetSource {
-//   user: string
-//   statusId: string
-// }
-
-async function fetchTweet(tweet: string) {
-  const { data } = await axios.get('/api/tweet?t=' + encodeURIComponent(tweet))
+async function fetchTweet(payload: TweetPayload): Promise<TweetResponse> {
+  const { data } = await axios.post<TweetResponse>('/api/tweet', payload)
   return data
 }
 
-// function parseTweet(url: string): TweetSource {
-//   const reg = /\.com\/(.*?)\/.*\/(\d.*)\?/gi.exec(url)
-//
-//   return {
-//     user: reg[1],
-//     statusId: reg[2]
-//   }
-// }
-
-function HomePage() {
+function HomePage(props: { host: string }): JSX.Element {
+  const router = useRouter()
   const urlInputRef = useRef(null)
-  const [url, setUrl] = useState(
-    'https://mobile.twitter.com/jack/status/1283571658339397632'
-  )
 
-  const { data, error } = useSWR<TweetInfo>([url], tweet => fetchTweet(tweet))
+  const [parseError, setParseError] = useState(false)
+  const [tweet, setTweet] = useState<TweetPayload | null>(null)
 
-  const updateUrl = useCallback(() => {
-    setUrl(urlInputRef.current.value)
-  }, [setUrl])
+  // Only fetch when the tweet can be parsed
+  const { data, error } = useSWR(tweet !== null ? [tweet] : null, fetchTweet)
 
-  const loadReply = useCallback(
-    (path: string) => {
-      setUrl(`https://mobile.twitter.com${path}`)
+  // Keep the URL in sync with the app state
+  useEffect(() => {
+    if (Array.isArray(router.query.t)) {
+      return setParseError(true)
+    }
+
+    // If there's no tweet in the url, unset everything
+    if (router.query.t === undefined) {
+      urlInputRef.current.value = ''
+      setTweet(null)
+      setParseError(false)
+      return
+    }
+
+    try {
+      const parsed = parseTweet(decodeURIComponent(router.query.t))
+      setTweet(parsed)
+      setParseError(false)
+    } catch (error) {
+      setParseError(true)
+    }
+  }, [setTweet, setParseError, urlInputRef, router.query.t])
+
+  // Manually request a new tweet and update the URL
+  const loadTweet = useCallback(
+    async (url: string) => {
+      if (url === '') {
+        setTweet(null)
+        setParseError(false)
+        return
+      }
+
+      try {
+        const parsed = parseTweet(url)
+        setTweet(parsed)
+        setParseError(false)
+      } catch (error) {
+        console.error('Unable to parse tweet, try again')
+        setParseError(true)
+        return
+      }
+
+      await router.push({
+        pathname: router.route,
+        query: {
+          t: url
+        }
+      })
     },
-    [setUrl]
+    [setParseError, setTweet, router.route]
   )
-
-  if (error) return <div>failed to load</div>
-  if (!data) return <div>loading...</div>
 
   return (
-    <div className="container mt-4">
-      <Head>
-        <link
-          rel="stylesheet"
-          href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
-        />
-      </Head>
+    <>
+      <Head />
+      <div className="container-fluid mt-4">
+        <div
+          className="col-sm-12"
+          style={{ maxWidth: '768px', margin: '0 auto' }}
+        >
+          <h1 className="h2">Shitter</h1>
+          <hr />
 
-      <div className="col-sm-12 col-md-10 col-lg-8 offset-md-1 offset-lg-2">
-        <h1 className="h3">
-          Silent Twitter
-        </h1>
-        <hr />
-        <div className="form-group">
-          <label htmlFor="tweetUrl">Tweet URL</label>
-
-          <div className="input-group">
-            <input
-              className="form-control"
-              id="tweetUrl"
-              defaultValue={url}
-              ref={urlInputRef}
-            />
-
-            <div className="input-group-append">
-              <button
-                className="btn btn-primary"
-                type="button"
-                onClick={() => updateUrl()}
-              >
-                Load
-              </button>
+          {/* Input for new tweet */}
+          <div className="form-group">
+            <label htmlFor="tweetUrl">Tweet URL</label>
+            <div className="input-group">
+              <input
+                className={`form-control form-control-sm ${
+                  parseError ? 'is-invalid' : ''
+                }`}
+                id="tweetUrl"
+                defaultValue={router.query.t}
+                ref={urlInputRef}
+              />
+              <div className="input-group-append">
+                <button
+                  className="btn btn-secondary btn-sm"
+                  type="button"
+                  onClick={async () => {
+                    await loadTweet(urlInputRef.current.value)
+                  }}
+                >
+                  Load
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="form-group">
-          <label>Tweet</label>
-          <div className="card">
-            <div className="card-body">
-              <div className="media">
-                <img
-                  className="mr-3 img-thumbnail rounded-circle"
-                  src={data.authorImage}
-                />
-                <div className="media-body">
-                  <h5 className="card-title mt-0">{data.author}</h5>
-                  <p>
-                    {data.content.split('\n').map(text => {
-                      return (
-                        <>
-                          <Twemoji text={text} />
-                          <br />
-                        </>
-                      )
-                    })}
+          {/* -- */}
+
+          {/* Parse Error */}
+          <div className="form-group">
+            <label htmlFor="tweetUrl">Tweet</label>
+
+            {tweet === null ? (
+              <div className="card mb-5">
+                <div className="card-body">
+                  <p className="mb-0">
+                    Enter a Twitter URL in the field above and click "Load".
                   </p>
-                  {data.hasMedia ? <img src={data.mediaUrl} /> : null}
-                  <p className="mb-0">{data.meta}</p>
                 </div>
               </div>
-              <hr />
-              <p className="mb-0">
-                {data.isReply ? (
-                  <>
-                    {' '}
-                    This tweet is a reply, view the previous one{' '}
-                    <a
-                      href="#"
-                      onClick={e => {
-                        e.preventDefault()
-                        loadReply(data.opUrl)
-                      }}
-                    >
-                      on this page
-                    </a>{' '}
-                    or{' '}
-                    <a
-                      href={`https://twitter.com` + data.opUrl}
-                      target="_blank"
-                    >
-                      on twitter.com
-                    </a>{' '}
-                    in a new tab.
-                    <br />
-                  </>
-                ) : null}
-                Open original tweet{' '}
-                <a href={url} target="_blank">
-                  on twitter.com
-                </a>
-                .
-              </p>
-            </div>
+            ) : null}
+
+            {error !== undefined || parseError ? (
+              <div className="card mb-5">
+                <div className="card-body">
+                  <p>
+                    Failed to load the tweet, please double check the URL is
+                    correct.
+                  </p>
+                  <ul>
+                    <li>
+                      <code>https://twitter.com/:userId/status/:tweetId</code>
+                    </li>
+                    <li>
+                      <code>
+                        https://mobile.twitter.com/:userId/status/:tweetId
+                      </code>
+                    </li>
+                    <li>
+                      <code>
+                        https://twitter.com/:userId/status/:tweetId?s=123
+                      </code>
+                    </li>
+                    <li>or a variation of the above</li>
+                  </ul>
+                </div>
+              </div>
+            ) : null}
+
+            {/* Fetching */}
+            {error === undefined && data === undefined && tweet !== null ? (
+              <div className="d-flex align-items-center mt-2 mb-5">
+                <strong>Fetching tweet...</strong>
+                <div
+                  className="spinner-border ml-auto"
+                  role="status"
+                  aria-hidden="true"
+                />
+              </div>
+            ) : null}
+
+            {error === undefined && data !== undefined && !parseError ? (
+              <div className="card mb-3">
+                <div className="card-body">
+                  <div className="media">
+                    <img
+                      className="mr-3 img-thumbnail rounded-circle"
+                      src={data.author.image}
+                    />
+                    <div className="media-body">
+                      <h2 className="card-title h5 mt-0">
+                        {data.author.name}{' '}
+                        <small className="text-muted">
+                          @{data.author.handle}
+                        </small>
+                      </h2>
+                      <p>
+                        {data.tweet.content.split('\n').map(text => {
+                          return (
+                            <>
+                              <Twemoji text={text} />
+                              <br />
+                            </>
+                          )
+                        })}
+                      </p>
+                      <p>{data.tweet.meta}</p>
+
+                      {data.media !== undefined ? (
+                        <ExpandMedia>
+                          <img
+                            className="img-fluid rounded mt-3"
+                            src={data.media.url}
+                          />
+                        </ExpandMedia>
+                      ) : null}
+
+                      <hr />
+                      {data.parent !== undefined ? (
+                        <a
+                          href="#"
+                          className="card-link"
+                          onClick={async e => {
+                            e.preventDefault()
+                            await loadTweet(data.parent.url)
+                          }}
+                        >
+                          Load parent
+                        </a>
+                      ) : null}
+                      <a
+                        href={data.tweet.url}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="card-link"
+                      >
+                        Open on Twitter.com
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="sharePath">
+              Link to this page (click to select)
+            </label>
+            <input
+              className="form-control form-control-sm"
+              id="sharePath"
+              value={`https://${props.host}${router.asPath}`}
+              onChange={() => {}}
+            />
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
+}
+
+export const getServerSideProps: GetServerSideProps = async context => {
+  return {
+    props: {
+      host: context.req.headers.host
+    }
+  }
 }
 
 export default HomePage
