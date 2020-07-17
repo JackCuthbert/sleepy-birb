@@ -1,4 +1,4 @@
-# working title
+# Sleepy Birb
 
 > Twitter client that shows 1 tweet at a time without distractions.
 

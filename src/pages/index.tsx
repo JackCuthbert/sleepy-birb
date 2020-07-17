@@ -83,7 +83,7 @@ function HomePage(props: { host: string }): JSX.Element {
           className="col-sm-12"
           style={{ maxWidth: '768px', margin: '0 auto' }}
         >
-          <h1 className="h2">Shitter</h1>
+          <h1 className="h2">Sleepy Birb</h1>
           <hr />
 
           {/* Input for new tweet */}
