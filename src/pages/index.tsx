@@ -230,17 +230,19 @@ function HomePage(props: { host: string }): JSX.Element {
             ) : null}
           </div>
 
-          <div className="form-group">
-            <label htmlFor="sharePath">
-              Link to this page (click to select)
-            </label>
-            <input
-              className="form-control form-control-sm"
-              id="sharePath"
-              value={`https://${props.host}${router.asPath}`}
-              onChange={() => {}}
-            />
-          </div>
+          {error === undefined && data !== undefined && !parseError ? (
+            <div className="form-group">
+              <label htmlFor="sharePath">
+                Link to this page (click to select)
+              </label>
+              <input
+                className="form-control form-control-sm"
+                id="sharePath"
+                value={`https://${props.host}${router.asPath}`}
+                onChange={() => {}}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
     </>
