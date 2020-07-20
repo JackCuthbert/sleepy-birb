@@ -13,12 +13,17 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^1.2.30",
+    "@fortawesome/free-solid-svg-icons": "^5.14.0",
+    "@fortawesome/react-fontawesome": "^0.1.11",
     "axios": "^0.19.2",
     "cheerio": "^1.0.0-rc.3",
+    "css-wipe": "^4.3.0",
     "next": "^9.5.1",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-emoji-render": "^1.2.4",
+    "styled-components": "^5.1.1",
     "swr": "^0.3.0"
   },
   "optionalDependencies": {
@@ -32,7 +37,9 @@
     "@semantic-release/release-notes-generator": "^9.0.1",
     "@types/cheerio": "^0.22.21",
     "@types/react": "^16.9.44",
+    "@types/styled-components": "^5.1.1",
     "@typescript-eslint/eslint-plugin": "^3.8.0",
+    "babel-plugin-styled-components": "^1.10.7",
     "eslint": "^7.6.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-config-standard": "^14.1.1",

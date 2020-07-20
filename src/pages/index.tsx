@@ -1,12 +1,46 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import axios from 'axios'
 import useSWR from 'swr'
-import { Twemoji } from 'react-emoji-render'
+import styled from 'styled-components'
 import { useRouter } from 'next/router'
 import { TweetResponse } from './api/tweet'
-import { Head, ExpandMedia } from '../components'
+import {
+  Box,
+  PageContainer,
+  GlobalStyle,
+  HeaderContainer,
+  HeaderH1,
+  URLContainer,
+  URLButton,
+  URLInput
+} from '../components'
 import { parseTweet, TweetPayload } from '../utils/tweet'
 import { GetServerSideProps } from 'next'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCrow, faArrowRight } from '@fortawesome/free-solid-svg-icons'
+import { theme } from '../utils'
+import { FetchingTweet } from '../modules/FetchingTweet'
+import { TweetParseOrFetchError } from '../modules/TweetParseOrFetchError'
+import { Tweet } from '../modules/Tweet'
+
+const Footer = styled.div`
+  color: #aaa;
+  font-size: 12px;
+  opacity: 0.5;
+`
+
+const FooterLink = styled.a`
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    color: ${theme.secondary};
+  }
+
+  & + & {
+    margin-left: 20px;
+  }
+`
 
 async function fetchTweet(payload: TweetPayload): Promise<TweetResponse> {
   const { data } = await axios.post<TweetResponse>('/api/tweet', payload)
@@ -52,6 +86,10 @@ function HomePage(props: { host: string }): JSX.Element {
       if (url === '') {
         setTweet(null)
         setParseError(false)
+        await router.push({
+          pathname: router.route,
+          query: {}
+        })
         return
       }
 
@@ -75,176 +113,98 @@ function HomePage(props: { host: string }): JSX.Element {
     [setParseError, setTweet, router.route]
   )
 
+  const goHome = useCallback(async () => {
+    await loadTweet('')
+  }, [])
+
+  const isSuccessful = error === undefined && data !== undefined && !parseError
+  const isError = error !== undefined || parseError
+  const isNoTweet = tweet === null && !parseError
+  const isFetching = error === undefined && data === undefined && tweet !== null
+  const isChild = isSuccessful && data.parent !== undefined
+
   return (
     <>
-      <Head />
-      <div className="container-fluid mt-4">
-        <div
-          className="col-sm-12"
-          style={{ maxWidth: '768px', margin: '0 auto' }}
-        >
-          <h1 className="h2">Sleepy Birb</h1>
-          <hr />
+      <GlobalStyle />
+      <PageContainer>
+        <HeaderContainer onClick={goHome}>
+          <FontAwesomeIcon icon={faCrow} color="#4D64C8" />
+          <HeaderH1>Sleepy Birb</HeaderH1>
+        </HeaderContainer>
 
-          {/* Input for new tweet */}
-          <div className="form-group">
-            <label htmlFor="tweetUrl">Tweet URL</label>
-            <div className="input-group">
-              <input
-                className={`form-control form-control-sm ${
-                  parseError ? 'is-invalid' : ''
-                }`}
-                id="tweetUrl"
-                defaultValue={router.query.t}
-                ref={urlInputRef}
-              />
-              <div className="input-group-append">
-                <button
-                  className="btn btn-secondary btn-sm"
-                  type="button"
-                  onClick={async () => {
-                    await loadTweet(urlInputRef.current.value)
+        {/* URL Input */}
+        <URLContainer>
+          <URLInput
+            placeholder="Tweet URL..."
+            defaultValue={router.query.t}
+            ref={urlInputRef}
+          />
+          <URLButton
+            onClick={async () => {
+              await loadTweet(urlInputRef.current.value)
+            }}
+          >
+            <FontAwesomeIcon icon={faArrowRight} fontSize="12px" color="#EEE" />
+          </URLButton>
+        </URLContainer>
+
+        {isNoTweet ? (
+          <Box>
+            <p>Enter a Twitter URL in the field above and click "Load".</p>
+          </Box>
+        ) : null}
+
+        {/* Fetching */}
+        {isFetching ? <FetchingTweet /> : null}
+
+        {/* Something went wrong in either fetch or parse */}
+        {isError ? <TweetParseOrFetchError /> : null}
+
+        {/* Succesfully retrieved tweet */}
+        {isSuccessful ? (
+          <Tweet tweet={data.tweet} author={data.author} media={data.media} />
+        ) : null}
+
+        <Footer>
+          {isSuccessful ? (
+            <>
+              <FooterLink
+                href={`${data.tweet.url}?sleepy=false`}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                Open on Twitter.com
+              </FooterLink>
+              {isChild ? (
+                <FooterLink
+                  href="#"
+                  className="card-link"
+                  onClick={async e => {
+                    e.preventDefault()
+                    await loadTweet(data.parent.url)
                   }}
                 >
-                  Load
-                </button>
-              </div>
-            </div>
-          </div>
-          {/* -- */}
-
-          {/* Parse Error */}
-          <div className="form-group">
-            <label htmlFor="tweetUrl">Tweet</label>
-
-            {tweet === null ? (
-              <div className="card mb-5">
-                <div className="card-body">
-                  <p className="mb-0">
-                    Enter a Twitter URL in the field above and click "Load".
-                  </p>
-                </div>
-              </div>
-            ) : null}
-
-            {error !== undefined || parseError ? (
-              <div className="card mb-5">
-                <div className="card-body">
-                  <p>
-                    Failed to load the tweet, please double check the URL is
-                    correct.
-                  </p>
-                  <ul>
-                    <li>
-                      <code>https://twitter.com/:userId/status/:tweetId</code>
-                    </li>
-                    <li>
-                      <code>
-                        https://mobile.twitter.com/:userId/status/:tweetId
-                      </code>
-                    </li>
-                    <li>
-                      <code>
-                        https://twitter.com/:userId/status/:tweetId?s=123
-                      </code>
-                    </li>
-                    <li>or a variation of the above</li>
-                  </ul>
-                </div>
-              </div>
-            ) : null}
-
-            {/* Fetching */}
-            {error === undefined && data === undefined && tweet !== null ? (
-              <div className="d-flex align-items-center mt-2 mb-5">
-                <strong>Fetching tweet...</strong>
-                <div
-                  className="spinner-border ml-auto"
-                  role="status"
-                  aria-hidden="true"
-                />
-              </div>
-            ) : null}
-
-            {error === undefined && data !== undefined && !parseError ? (
-              <div className="card mb-3">
-                <div className="card-body">
-                  <div className="media">
-                    <img
-                      className="mr-3 img-thumbnail rounded-circle"
-                      src={data.author.image}
-                    />
-                    <div className="media-body">
-                      <h2 className="card-title h5 mt-0">
-                        {data.author.name}{' '}
-                        <small className="text-muted">
-                          @{data.author.handle}
-                        </small>
-                      </h2>
-                      <p>
-                        {data.tweet.content.split('\n').map(text => {
-                          return (
-                            <>
-                              <Twemoji text={text} />
-                              <br />
-                            </>
-                          )
-                        })}
-                      </p>
-                      <p>{data.tweet.meta}</p>
-
-                      {data.media !== undefined ? (
-                        <ExpandMedia>
-                          <img
-                            className="img-fluid rounded mt-3"
-                            src={data.media.url}
-                          />
-                        </ExpandMedia>
-                      ) : null}
-
-                      <hr />
-                      {data.parent !== undefined ? (
-                        <a
-                          href="#"
-                          className="card-link"
-                          onClick={async e => {
-                            e.preventDefault()
-                            await loadTweet(data.parent.url)
-                          }}
-                        >
-                          Load parent
-                        </a>
-                      ) : null}
-                      <a
-                        href={`${data.tweet.url}?sleepy=false`}
-                        target="_blank"
-                        rel="noreferrer noopener"
-                        className="card-link"
-                      >
-                        Open on Twitter.com
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          {error === undefined && data !== undefined && !parseError ? (
-            <div className="form-group">
-              <label htmlFor="sharePath">
-                Link to this page (click to select)
-              </label>
-              <input
-                className="form-control form-control-sm"
-                id="sharePath"
-                value={`https://${props.host}${router.asPath}`}
-                onChange={() => {}}
-              />
-            </div>
+                  Load parent
+                </FooterLink>
+              ) : null}
+            </>
           ) : null}
-        </div>
-      </div>
+          <FooterLink
+            href="https://github.com/JackCuthbert/sleepy-birb"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            Source Code
+          </FooterLink>
+          <FooterLink
+            href="https://github.com/JackCuthbert/sleepy-birb-redirect/releases"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            Browser extension
+          </FooterLink>
+        </Footer>
+      </PageContainer>
     </>
   )
 }
