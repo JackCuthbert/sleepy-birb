@@ -216,7 +216,7 @@ function HomePage(props: { host: string }): JSX.Element {
                         </a>
                       ) : null}
                       <a
-                        href={data.tweet.url}
+                        href={`${data.tweet.url}?sleepy=false`}
                         target="_blank"
                         rel="noreferrer noopener"
                         className="card-link"
