@@ -15,7 +15,7 @@
   "dependencies": {
     "axios": "^0.19.2",
     "cheerio": "^1.0.0-rc.3",
-    "next": "^9.4.4",
+    "next": "^9.5.1",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-emoji-render": "^1.2.4",
