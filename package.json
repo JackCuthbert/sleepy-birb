@@ -19,7 +19,7 @@
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-emoji-render": "^1.2.4",
-    "swr": "^0.2.3"
+    "swr": "^0.3.0"
   },
   "optionalDependencies": {
     "husky": "^4.2.5"
