@@ -15,7 +15,7 @@
   "dependencies": {
     "axios": "^0.19.2",
     "cheerio": "^1.0.0-rc.3",
-    "next": "^9.4.4",
+    "next": "^9.5.1",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-emoji-render": "^1.2.4",
@@ -25,15 +25,15 @@
     "husky": "^4.2.5"
   },
   "devDependencies": {
-    "@commitlint/cli": "^9.1.1",
+    "@commitlint/cli": "^9.1.2",
     "@commitlint/config-conventional": "^9.1.1",
     "@semantic-release/commit-analyzer": "^8.0.1",
     "@semantic-release/github": "^7.0.7",
     "@semantic-release/release-notes-generator": "^9.0.1",
     "@types/cheerio": "^0.22.21",
-    "@types/react": "^16.9.43",
-    "@typescript-eslint/eslint-plugin": "^3.6.1",
-    "eslint": "^7.4.0",
+    "@types/react": "^16.9.44",
+    "@typescript-eslint/eslint-plugin": "^3.8.0",
+    "eslint": "^7.6.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-config-standard": "^14.1.1",
     "eslint-config-standard-react": "^9.2.0",
@@ -42,7 +42,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^3.1.4",
     "eslint-plugin-promise": "^4.2.1",
-    "eslint-plugin-react": "^7.20.3",
+    "eslint-plugin-react": "^7.20.5",
     "eslint-plugin-standard": "^4.0.1",
     "prettier": "^2.0.5",
     "typescript": "^3.9.7"
