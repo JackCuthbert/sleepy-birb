@@ -47,7 +47,7 @@ async function fetchTweet(payload: TweetPayload): Promise<TweetResponse> {
   return data
 }
 
-function HomePage(props: { host: string }): JSX.Element {
+function HomePage(): JSX.Element {
   const router = useRouter()
   const urlInputRef = useRef(null)
 

@@ -5,4 +5,3 @@ export const PageContainer = styled.div`
   padding: 0 20px;
   margin: 60px auto 0 auto;
 `
-
