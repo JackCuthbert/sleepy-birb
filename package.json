@@ -24,7 +24,7 @@
     "react-dom": "^16.14.0",
     "react-emoji-render": "^1.2.4",
     "styled-components": "^5.2.0",
-    "swr": "^0.3.6"
+    "swr": "^0.3.8"
   },
   "optionalDependencies": {
     "husky": "^4.2.5"
